@@ -675,20 +675,22 @@ function registrarPaciente() {
     pacientes.push(paciente);
     localStorage.setItem('pacientes_salud', JSON.stringify(pacientes));
 
-    // Sincronizar (sin proxy, intentar directo)
+    // Sincronizar (convertir a FormData para no-cors)
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(paciente));
+    
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paciente),
+        body: formData,
         mode: 'no-cors'
     })
     .then(() => {
-        console.log('Sincronizado exitosamente');
+        console.log('Sincronizado');
         mostrarAlerta(`✓ Registrado. Turno #${turno}`, 'success');
     })
     .catch(() => {
-        console.log('Error al sincronizar, guardado localmente');
-        mostrarAlerta('Registrado localmente (sin conexión a Sheet)', 'success');
+        console.log('Error al sincronizar');
+        mostrarAlerta('Registrado localmente', 'success');
     });
     
     limpiarForm();
@@ -816,10 +818,12 @@ function guardarFicha(id) {
     // Enviar ficha al sheet
     const ficha = { ...p, tipo: 'FICHA_MEDICA' };
     
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(ficha));
+    
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ficha),
+        body: formData,
         mode: 'no-cors'
     })
     .then(() => {
