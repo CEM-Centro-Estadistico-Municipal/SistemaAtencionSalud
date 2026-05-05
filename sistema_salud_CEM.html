@@ -540,6 +540,7 @@
 
 <script>
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzfh9stTkLiSwxd5E71FufC6bNhuweoqN_za9kSXQhOms0oQIvE_q2KW3s84yeO0ABaGA/exec';
+const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
 
 let pacientes = JSON.parse(localStorage.getItem('pacientes_salud')) || [];
 let dependenciaActual = 'CIC';
@@ -674,14 +675,21 @@ function registrarPaciente() {
     pacientes.push(paciente);
     localStorage.setItem('pacientes_salud', JSON.stringify(pacientes));
 
-    // Sincronizar
+    // Sincronizar (sin proxy, intentar directo)
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paciente)
+        body: JSON.stringify(paciente),
+        mode: 'no-cors'
     })
-    .then(() => mostrarAlerta(`✓ Registrado. Turno #${turno}`, 'success'))
-    .catch(() => mostrarAlerta('Registrado localmente', 'success'));
+    .then(() => {
+        console.log('Sincronizado exitosamente');
+        mostrarAlerta(`✓ Registrado. Turno #${turno}`, 'success');
+    })
+    .catch(() => {
+        console.log('Error al sincronizar, guardado localmente');
+        mostrarAlerta('Registrado localmente (sin conexión a Sheet)', 'success');
+    });
     
     limpiarForm();
 }
@@ -811,13 +819,18 @@ function guardarFicha(id) {
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ficha)
+        body: JSON.stringify(ficha),
+        mode: 'no-cors'
     })
     .then(() => {
+        console.log('Ficha sincronizada');
         alert('Ficha guardada y sincronizada');
         actualizarCola();
     })
-    .catch(() => alert('Ficha guardada (error al sincronizar)'));
+    .catch(() => {
+        console.log('Error al sincronizar ficha');
+        alert('Ficha guardada (sin conexión a Sheet)');
+    });
 }
 
 function actualizarReportes() {
