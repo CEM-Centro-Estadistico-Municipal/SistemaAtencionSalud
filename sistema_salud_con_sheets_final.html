@@ -701,10 +701,13 @@ function registrarPaciente() {
     pacientes.push(paciente);
     localStorage.setItem('pacientes_salud', JSON.stringify(pacientes));
 
+    // Enviar JSON en el body
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify(paciente),
-        mode: 'no-cors'
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paciente)
     })
     .then(() => {
         mostrarAlerta(`✓ Paciente registrado. Turno #${turno}. Datos sincronizados.`, 'success');
@@ -899,11 +902,13 @@ function guardarFicha(id) {
     };
 
     // Sincronizar con Google Sheets
-    changiarEstadoSync('syncing');
+    cambiarEstadoSync('syncing');
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify(fichaSync),
-        mode: 'no-cors'
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fichaSync)
     })
     .then(() => {
         alert('Ficha guardada y sincronizada correctamente');
