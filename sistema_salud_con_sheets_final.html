@@ -392,18 +392,66 @@
                     </div>
                     <div class="form-group">
                         <label>Barrio</label>
-                        <input type="text" id="barrio" placeholder="Centro">
+                        <select id="barrio" onchange="actualizarBarrio()">
+                            <option value="">Seleccionar barrio</option>
+                            <option>100 Viviendas</option>
+                            <option>128 Viviendas</option>
+                            <option>1ra Sección (Ejido)</option>
+                            <option>30 Viviendas</option>
+                            <option>35 Viviendas</option>
+                            <option>3ra Sección</option>
+                            <option>48 Viviendas</option>
+                            <option>80 Viviendas</option>
+                            <option>90 Viviendas</option>
+                            <option>AeroClub</option>
+                            <option>Antártida Argentina</option>
+                            <option>Arroyo Vega</option>
+                            <option>Bello Horizonte</option>
+                            <option>Berón de Astrada</option>
+                            <option>Bicentenario</option>
+                            <option>Camino del Medio</option>
+                            <option>Centro</option>
+                            <option>Cooperativa</option>
+                            <option>Costanera</option>
+                            <option>Curva Norte (J Ferreira)</option>
+                            <option>El piropo</option>
+                            <option>Islas Malvinas</option>
+                            <option>Itatí</option>
+                            <option>La Tablada</option>
+                            <option>Las Palmeras</option>
+                            <option>Los Sauces</option>
+                            <option>Mancini</option>
+                            <option>San Antonio</option>
+                            <option>San Benito</option>
+                            <option>San Cayetano</option>
+                            <option>San Fernando</option>
+                            <option>Santa Librada</option>
+                            <option>Villa Oristia</option>
+                            <option>Hospital</option>
+                            <option>Santa Catalina</option>
+                            <option>Quinta Cuatro</option>
+                            <option>34 viviendas</option>
+                            <option>Obras Sanitarias</option>
+                            <option>La Providencia</option>
+                            <option>Guayquiraro</option>
+                            <option>Los Ceibos</option>
+                            <option>Los Lirios</option>
+                            <option>Inmaculada</option>
+                            <option>Av. Juan Ramón Vidal</option>
+                            <option>Villa Soldati</option>
+                            <option>Ruta 12</option>
+                            <option>Otros (especificar)</option>
+                        </select>
+                        <input type="text" id="barrio-otros" placeholder="Especificar barrio" style="display: none; margin-top: 8px;">
                     </div>
                     <div class="form-group">
                         <label>Cobertura *</label>
                         <select id="cobertura">
                             <option value="">Seleccionar</option>
-                            <option>IOMA</option>
-                            <option>OSECAC</option>
-                            <option>PAMI</option>
-                            <option>SWISS MEDICAL</option>
-                            <option>GALENIA</option>
-                            <option>Sin cobertura</option>
+                            <option>IOSCOR</option>
+                            <option>ProFE</option>
+                            <option>IncluirSalud</option>
+                            <option>Otros (especificar)</option>
                         </select>
                     </div>
                 </div>
@@ -530,6 +578,17 @@ function switchTab(tab) {
     if (tab === 'ficha') cargarListaPacientes();
 }
 
+function actualizarBarrio() {
+    const select = document.getElementById('barrio');
+    const otros = document.getElementById('barrio-otros');
+    if (select.value === 'Otros (especificar)') {
+        otros.style.display = 'block';
+        otros.focus();
+    } else {
+        otros.style.display = 'none';
+    }
+}
+
 function selectDependencia(dep) {
     dependenciaActual = dep;
     document.querySelectorAll('.dep-btn').forEach(b => b.classList.remove('active'));
@@ -552,7 +611,17 @@ function registrarPaciente() {
     const nombre = document.getElementById('nombre').value.trim();
     const apellido = document.getElementById('apellido').value.trim();
     const dni = document.getElementById('dni').value.trim();
-    const barrio = document.getElementById('barrio').value.trim();
+    let barrio = document.getElementById('barrio').value.trim();
+    
+    // Si es "Otros", usar el input de especificación
+    if (barrio === 'Otros (especificar)') {
+        barrio = document.getElementById('barrio-otros').value.trim();
+        if (!barrio) {
+            mostrarAlerta('Especificá el barrio', 'error');
+            return;
+        }
+    }
+    
     const cobertura = document.getElementById('cobertura').value;
     const especialidad = especialidadActual;
     const profesional = document.getElementById('profesional').value;
