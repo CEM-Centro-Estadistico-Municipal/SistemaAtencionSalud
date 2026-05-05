@@ -591,6 +591,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzR82hYktTtk_US
 let pacientes = JSON.parse(localStorage.getItem('pacientes_salud')) || [];
 let dependenciaActual = 'CIC';
 let especialidadActual = '';
+let fichaActual = {};
 
 const profesionalesCIC = {
     'Clínica': ['Dr. Martín Tognola', 'Dra. Laura Saucedo', 'Dra. Nilda Mendoza'],
@@ -697,23 +698,21 @@ function registrarPaciente() {
         estado: 'esperando'
     };
 
-    // Guardar localmente
     pacientes.push(paciente);
     localStorage.setItem('pacientes_salud', JSON.stringify(pacientes));
 
-    // Sincronizar con Google Sheets
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         body: JSON.stringify(paciente),
         mode: 'no-cors'
     })
     .then(() => {
-        mostrarAlerta(`✓ Paciente registrado. Turno #${turno}. Datos sincronizados con Google Sheets.`, 'success');
+        mostrarAlerta(`✓ Paciente registrado. Turno #${turno}. Datos sincronizados.`, 'success');
         limpiarFormulario();
         cambiarEstadoSync('synced');
     })
-    .catch(error => {
-        mostrarAlerta(`Paciente registrado localmente (error al sincronizar con Sheet)`, 'success');
+    .catch(() => {
+        mostrarAlerta(`Paciente registrado localmente`, 'success');
         cambiarEstadoSync('error');
     })
     .finally(() => {
@@ -743,7 +742,7 @@ function cambiarEstadoSync(estado) {
     status.className = `sync-status ${estado}`;
     if (estado === 'synced') status.textContent = '✓ Sincronizado';
     if (estado === 'syncing') status.textContent = '⟳ Sincronizando...';
-    if (estado === 'error') status.textContent = '⚠ Error de sincronización';
+    if (estado === 'error') status.textContent = '⚠ Error';
 }
 
 // COLA DE ESPERA
@@ -824,6 +823,8 @@ function abrirFicha(id) {
     const pac = pacientes.find(p => p.id === id);
     if (!pac) return;
     
+    fichaActual = { id, nombre: pac.nombre, apellido: pac.apellido, dni: pac.dni, especialidad: pac.especialidad, profesional: pac.profesional };
+    
     const container = document.getElementById('ficha-container');
     let html = `
         <div class="ficha-header">
@@ -834,48 +835,85 @@ function abrirFicha(id) {
         </div>
     `;
     
-    html += generarFichaEspecialidad(pac.especialidad);
-    
-    html += `<div class="btn-group" style="margin-top: 32px;">
-        <button class="btn-primary" onclick="guardarFicha(${pac.id})">Guardar Ficha</button>
-        <button class="btn-secondary" onclick="window.print()">Imprimir</button>
-    </div>`;
+    html += `
+        <div class="card" style="margin-top: 20px;">
+            <h3>Evaluación ${pac.especialidad}</h3>
+            <div class="form-group">
+                <label>Síntomas y Motivo de Consulta</label>
+                <textarea id="ficha-sintomas" placeholder="Describí qué presenta..."></textarea>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+                <label>Examen Físico</label>
+                <textarea id="ficha-examen" placeholder="Hallazgos clínicos..."></textarea>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+                <label>Diagnóstico</label>
+                <textarea id="ficha-diagnostico" placeholder="Diagnóstico presuntivo o confirmado..."></textarea>
+            </div>
+            <div class="form-group" style="margin-top: 12px;">
+                <label>Plan Terapéutico</label>
+                <textarea id="ficha-plan" placeholder="Medicamentos, derivaciones, seguimiento..."></textarea>
+            </div>
+            <div class="btn-group" style="margin-top: 32px;">
+                <button class="btn-primary" onclick="guardarFicha(${pac.id})">Guardar Ficha y Sincronizar</button>
+                <button class="btn-secondary" onclick="window.print()">Imprimir</button>
+            </div>
+        </div>
+    `;
     
     container.innerHTML = html;
 }
 
-function generarFichaEspecialidad(espec) {
-    return `
-        <div class="card" style="margin-top: 20px;">
-            <h3>Evaluación ${espec}</h3>
-            <div class="form-group">
-                <label>Síntomas y Motivo de Consulta</label>
-                <textarea placeholder="Describí qué presenta..."></textarea>
-            </div>
-            <div class="form-group" style="margin-top: 12px;">
-                <label>Examen Físico</label>
-                <textarea placeholder="Hallazgos clínicos..."></textarea>
-            </div>
-            <div class="form-group" style="margin-top: 12px;">
-                <label>Diagnóstico</label>
-                <textarea placeholder="Diagnóstico presuntivo o confirmado..."></textarea>
-            </div>
-            <div class="form-group" style="margin-top: 12px;">
-                <label>Plan Terapéutico</label>
-                <textarea placeholder="Medicamentos, derivaciones, seguimiento..."></textarea>
-            </div>
-        </div>
-    `;
-}
-
 function guardarFicha(id) {
+    const sintomas = document.getElementById('ficha-sintomas').value.trim();
+    const examen = document.getElementById('ficha-examen').value.trim();
+    const diagnostico = document.getElementById('ficha-diagnostico').value.trim();
+    const plan = document.getElementById('ficha-plan').value.trim();
+    
     const pac = pacientes.find(p => p.id === id);
-    if (pac) {
-        pac.estado = 'completado';
-        localStorage.setItem('pacientes_salud', JSON.stringify(pacientes));
-        alert('Ficha guardada correctamente');
+    if (!pac) return;
+
+    // Guardar localmente
+    pac.estado = 'completado';
+    pac.ficha = { sintomas, examen, diagnostico, plan };
+    localStorage.setItem('pacientes_salud', JSON.stringify(pacientes));
+
+    // Crear objeto para sincronizar (ficha + datos de paciente)
+    const fichaSync = {
+        tipo: 'FICHA_MEDICA',
+        id,
+        nombre: pac.nombre,
+        apellido: pac.apellido,
+        dni: pac.dni,
+        especialidad: pac.especialidad,
+        profesional: pac.profesional,
+        dependencia: pac.dependencia,
+        fecha: pac.fecha,
+        hora: pac.hora,
+        turno: pac.turno,
+        sintomas,
+        examen,
+        diagnostico,
+        plan,
+        estado: 'completado'
+    };
+
+    // Sincronizar con Google Sheets
+    changiarEstadoSync('syncing');
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(fichaSync),
+        mode: 'no-cors'
+    })
+    .then(() => {
+        alert('Ficha guardada y sincronizada correctamente');
+        cambiarEstadoSync('synced');
         actualizarColas();
-    }
+    })
+    .catch(() => {
+        alert('Ficha guardada localmente (error al sincronizar)');
+        cambiarEstadoSync('error');
+    });
 }
 
 // REPORTES
@@ -896,7 +934,7 @@ function actualizarReportes() {
                     <h4>#${p.turno} – ${p.nombre} ${p.apellido}</h4>
                     <div class="queue-detail">DNI: ${p.dni} | ${p.especialidad}</div>
                     <div class="queue-detail">${p.profesional} | ${p.dependencia}</div>
-                    <div class="queue-detail"><strong>Estado:</strong> ${p.estado === 'completado' ? 'Atendido' : 'En espera'}</div>
+                    <div class="queue-detail"><strong>Estado:</strong> ${p.estado === 'completado' ? 'Ficha Completa' : 'En espera'}</div>
                 </div>
             </div>
         `;
