@@ -540,21 +540,20 @@
 
 <script>
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmo6B6P9-jnBFKM_55rG_z6L1o7GKqm3CXP5vgcqBoRH9KuKl5_aJ_k9GpDb_QZwur/exec';
-const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
 
 let pacientes = JSON.parse(localStorage.getItem('pacientes_salud')) || [];
 let dependenciaActual = 'CIC';
 let especialidadActual = '';
 
 const profesionalesCIC = {
-    'Clínica': ['Dr. Martín Tognola', 'Dra. Laura Saucedo', 'Dra. Nilda Mendoza'],
+    'Clínica': ['Dr. Martín Tognola', 'Dra. Laura Saucedo', 'Dra. Nilda Mendoza', 'Merlo Cristian', 'Barrios Carmen'],
     'Ginecología': ['Dra. Sosa', 'Dra. Natalia Platoni'],
     'Pediatría': ['Pediatra Carla Sarubi', 'Pediatra Verónica Joerin', 'Pediatra Yanina Guastavino'],
     'Cardiología': ['Dra. Marisa Rodríguez'],
     'Traumatología': ['Dr. Solís'],
     'Kinesiología': ['Kinesiólogo Facundo Sarubi', 'Kinesiólogo Gastón Leguizamón'],
     'Nutrición': ['Nutricionista Melisa Guartemendía', 'Nutricionista Carla Boarí'],
-    'Odontología': ['Dr. Bianchi José', 'Dra. Vivanco Vanina', 'Dr. Davicino Marcos', 'Dra. Balestra Melina', 'Dr. Cafferata José'],
+    'Odontología': ['Dr. Bianchi José', 'Dra. Vivanco Vanina', 'Dr. Davicino Marcos', 'Dra. Balestra Melina', 'Dr. Cafferata José', 'Michellod Atilio'],
     'Oftalmología': [], 'Psicología': [], 'Psiquiatría': [], 'Dermatología': [], 'Urología': [], 'Farmacia': [], 'Otra': []
 };
 
@@ -632,7 +631,6 @@ function registrarPaciente() {
     const dni = document.getElementById('dni').value.trim();
     let barrio = document.getElementById('barrio').value.trim();
     
-    // Si es "Otros", usar el input de especificación
     if (barrio === 'Otros (especificar)') {
         barrio = document.getElementById('barrio-otros').value.trim();
         if (!barrio) {
@@ -643,7 +641,6 @@ function registrarPaciente() {
     
     let cobertura = document.getElementById('cobertura').value;
     
-    // Si es "Otros", usar el input de especificación
     if (cobertura === 'Otros (especificar)') {
         cobertura = document.getElementById('cobertura-otros').value.trim();
         if (!cobertura) {
@@ -675,7 +672,6 @@ function registrarPaciente() {
     pacientes.push(paciente);
     localStorage.setItem('pacientes_salud', JSON.stringify(pacientes));
 
-    // Sincronizar (convertir a FormData para no-cors)
     const formData = new FormData();
     formData.append('data', JSON.stringify(paciente));
     
@@ -685,11 +681,9 @@ function registrarPaciente() {
         mode: 'no-cors'
     })
     .then(() => {
-        console.log('Sincronizado');
         mostrarAlerta(`✓ Registrado. Turno #${turno}`, 'success');
     })
     .catch(() => {
-        console.log('Error al sincronizar');
         mostrarAlerta('Registrado localmente', 'success');
     });
     
@@ -815,7 +809,6 @@ function guardarFicha(id) {
 
     localStorage.setItem('pacientes_salud', JSON.stringify(pacientes));
 
-    // Enviar ficha al sheet
     const ficha = { ...p, tipo: 'FICHA_MEDICA' };
     
     const formData = new FormData();
@@ -827,12 +820,10 @@ function guardarFicha(id) {
         mode: 'no-cors'
     })
     .then(() => {
-        console.log('Ficha sincronizada');
         alert('Ficha guardada y sincronizada');
         actualizarCola();
     })
     .catch(() => {
-        console.log('Error al sincronizar ficha');
         alert('Ficha guardada (sin conexión a Sheet)');
     });
 }
@@ -854,7 +845,6 @@ function actualizarReportes() {
     document.getElementById('listado-pacientes').innerHTML = html || '<p style="color: #999;">Sin pacientes</p>';
 }
 
-// Inicializar
 document.addEventListener('DOMContentLoaded', () => {
     const dep_cic = document.querySelector('[onclick="selectDependencia(\'CIC\')"]');
     if (dep_cic) dep_cic.click();
